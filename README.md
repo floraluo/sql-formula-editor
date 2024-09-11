@@ -1,5 +1,7 @@
 # sql-formula-editor
 
+![sql编辑器图片](./sql-editor.png)
+
 ## 项目说明
 
 公式编辑器
