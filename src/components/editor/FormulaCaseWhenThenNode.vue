@@ -2,14 +2,11 @@
 <li>
   <span class='inline-block default-symbol'>条件：</span>
 
-  <!-- <span class="cursor-placeholder " 
-        v-if="(conditionNodeList.length === 0 || prevCursor.place === 'caseCondition') && 
-              `${node.path}-${nodeListIndex}-0` === cursor.path && 
-              cursor.place === 'caseCondition'"></span> -->
   <span class="cursor-placeholder " 
         v-if="showCursorOfTheConditionPlace"></span>
 
   <el-button icon="el-icon-edit" circle size="mini"
+
                     v-else-if="showEditBtnOfTheConditionPlace" 
                     @click="$emit('editCaseStructExp',{
                       node,
@@ -22,7 +19,7 @@
     :node="item"
     :nodeIndex="index"
     :editable="editable"
-    :prevCursor="prevCursor"
+    
     :cursor="cursor"
     :selectedNode="selectedNode"
     :hoverNode="hoverNode"
@@ -46,7 +43,7 @@
     :node="item"
     :nodeIndex="index"
     :editable="editable"
-    :prevCursor="prevCursor"
+    
     :cursor="cursor"
     :selectedNode="selectedNode"
     :hoverNode="hoverNode"
@@ -72,10 +69,6 @@ export default {
       required: true
     },
     cursor: {
-      type: Object,
-      required: true
-    },
-    prevCursor: {
       type: Object,
       required: true
     },

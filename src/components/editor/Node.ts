@@ -1,29 +1,100 @@
-import {
-  nodeChildrenMap
-} from './nodeMaps'
-import {
-  deepCopy
-} from '@/lib/util'
+import { nodeChildrenMap } from "./nodeMaps";
+// import { deepCopy } from '@/lib/util.js'
+import { cloneDeep } from "lodash";
 
+interface INode {
+  [name: string]: any;
+  nodeIndex: number;
+  layerIndex: number;
+  verticalIndex: number;
+  parentNode?: INode;
+  children?: INode[] | INode[][];
+  cloneNode: () => INode | undefined;
+  initNode: ({
+    opt,
+    parentNode,
+    autoReplace,
+    fieldList,
+  }: {
+    opt: any;
+    parentNode: INode;
+    autoReplace?: boolean;
+    fieldList?: any[];
+  }) => INode;
+  updateChildNodeIndex: ({
+    layerIndex,
+    startIndex,
+  }: {
+    layerIndex: number;
+    startIndex: number;
+  }) => void;
+  reset: (rootNode: any) => void;
+  patchInsertNode: ({
+    nodeList,
+    index,
+    layerIndex,
+    cursor,
+    fieldListAvailable,
+  }: {
+    nodeList: INode[];
+    index: number;
+    layerIndex: number;
+    cursor: any;
+    fieldListAvailable: any[];
+  }) => void;
+  getNodeList: (layerIndex: number) => any[];
+  insertNode: ({
+    node,
+    index,
+    layerIndex,
+    cursor,
+    autoReplace,
+    fieldListAvailable,
+  }: {
+    node: any;
+    index: number;
+    layerIndex: number;
+    cursor: any;
+    autoReplace?: boolean;
+    fieldListAvailable?: any[];
+  }) => void;
+  deleteNode: (index: number, layerIndex: number) => void;
+  insertLayer: ({
+    layerIndex,
+    copy,
+  }: {
+    layerIndex: number;
+    copy: boolean;
+  }) => void;
+  deleteLayer: (layerIndex: number) => void;
+  updateNodeLayerIndex: (layerIndex: number) => void;
+  autoReplaceSelfField: (fieldListAvailable: any[]) => void;
+}
+interface INodeOptKeyObj {
+  [key: string]: number | string | [];
+}
+type HasChildrenNodeType = keyof typeof nodeChildrenMap;
 /**
  * opt:  节点可扩展任意属性，比如传参属性，渲染/操作节点属性
- * 
+ *
  */
-class Node {
-  parentNode
-  nodeIndex
-  layerIndex
-  verticalIndex
-  constructor({
-    opt,
-    parentNode
-  }) {
-    Object.keys(opt).forEach(key => {
+class Node implements INode {
+  parentNode?: INode;
+  nodeIndex: number;
+  layerIndex: number;
+  verticalIndex: number;
+  [key: string]: any;
+  // opt: object;
+  constructor({ opt, parentNode }: { opt: INodeOptKeyObj; parentNode?: INode }) {
+    // this.opt = opt;
+    Object.keys(opt).forEach((key) => {
+      // if (typeof key === 'string') {
       this[key] = opt[key];
+      // }
     });
-    this.nodeIndex = opt.nodeIndex;
-    this.layerIndex = opt.layerIndex;
-    this.verticalIndex = opt.verticalIndex;
+    this.nodeIndex = <number>opt.nodeIndex;
+    this.layerIndex = <number>opt.layerIndex;
+    this.verticalIndex = <number>opt.verticalIndex;
     this.parentNode = parentNode;
     // if (parentNode) {
     //   const nodePathArray = [this.nodeIndex, this.layerIndex]
@@ -40,13 +111,13 @@ class Node {
     //   console.log('this.pathStr:>> ', this.pathStr);
     // }
     if (!opt.children) {
-      const getNodeChildren = nodeChildrenMap[opt.renderType];
+      const getNodeChildren =
+        nodeChildrenMap[<HasChildrenNodeType>opt.renderType];
       if (getNodeChildren) {
         this.children = getNodeChildren(this);
       }
-      // this.children = getNodeChildren ? getNodeChildren(this) : undefined;
     }
-    Object.defineProperty(this, 'path', {
+    Object.defineProperty(this, "path", {
       get() {
         if (this.parentNode) {
           const parentNodePath = this.parentNode && this.parentNode.path;
@@ -54,27 +125,23 @@ class Node {
           parentNodePath !== undefined && pathArr.push(parentNodePath);
           this.layerIndex !== undefined && pathArr.push(this.layerIndex);
           pathArr.push(this.nodeIndex);
-          return pathArr.join('-');
+          return pathArr.join("-");
         } else {
-          // this.name !=='root' && console.log('parentNode undefint this :>> ', this);
           return undefined;
         }
-
       },
-      set() {
-        // console.log('set Node Path :>> ', this.path);
-      }
-    })
+      set() {},
+    });
   }
   //克隆节点
-  cloneNode() {
+  cloneNode(): INode | undefined {
     if (this.constructor === Node) {
-      const copyNode = deepCopy(this);
-      delete copyNode.parentNode
+      const copyNode = cloneDeep(this);
+      delete copyNode.parentNode;
       return this.initNode({
         opt: copyNode,
         parentNode: this.parentNode,
-      })
+      });
     }
   }
 
@@ -84,19 +151,24 @@ class Node {
     parentNode,
     autoReplace = false,
     fieldList,
-  }) {
-    const node = new Node({
+  }: {
+    opt: INodeOptKeyObj;
+    parentNode?: INode;
+    autoReplace?: boolean;
+    fieldList?: any[];
+  }): INode {
+    const node: INode = new Node({
       opt,
-      parentNode
+      parentNode,
     });
     if (autoReplace && node.category === "field") {
-      node.autoReplaceSelfField(fieldList);
+      node.autoReplaceSelfField(fieldList!);
     }
     if (opt.children) {
       node.children = [];
       _initChildrenOfCopiedNode({
         parentNode: node,
-        children: opt.children,
+        children: <INode[] | INode[][]>opt.children,
         autoReplace,
         fieldList,
       });
@@ -109,9 +181,12 @@ class Node {
    */
   updateChildNodeIndex({
     layerIndex,
-    startIndex
+    startIndex,
+  }: {
+    layerIndex: number;
+    startIndex: number;
   }) {
-    const childList = this.getNodeList(layerIndex)
+    const childList = this.getNodeList(layerIndex);
     childList.forEach((childNode, index) => {
       if (index >= startIndex) {
         childNode.nodeIndex = index;
@@ -119,18 +194,20 @@ class Node {
     });
   }
   //重置根节点（撤销，恢复操作）
-  reset(rootNodeSnapShot) {
-    if (this.renderType == 'root') {
-      const rootChildNodeList = rootNodeSnapShot.children.map((childNode, index) => {
-        return this.initNode({
-          opt: {
-            ...childNode,
-            place: 'rootChildren',
-            nodeIndex: index
-          },
-          parentNode: this
-        });
-      })
+  reset(rootNodeSnapShot: any) {
+    if (this.renderType == "root") {
+      const rootChildNodeList = rootNodeSnapShot.children.map(
+        (childNode: any, index: number) => {
+          return this.initNode({
+            opt: {
+              ...childNode,
+              place: "rootChildren",
+              nodeIndex: index,
+            },
+            parentNode: this,
+          });
+        }
+      );
       this.children.push(...rootChildNodeList);
     }
   }
@@ -141,15 +218,22 @@ class Node {
     layerIndex,
     cursor,
     fieldListAvailable,
+  }: {
+    nodeList: INode[];
+    index: number;
+    layerIndex: number;
+    cursor: any;
+    fieldListAvailable: any[];
   }) {
-    const insertedNodeList = nodeList.map(node => {
+    const insertedNodeList: INode[] = nodeList.map((node) => {
       if (!(node instanceof Node)) {
         if (!cursor) {
           throw new Error("实例化Node，缺少cursor");
         }
+
         const insertedNode = this.initNode({
           opt: {
-            ...node,
+            ...(<INodeOptKeyObj>node),
             place: cursor.place,
             nodeIndex: cursor.index,
             layerIndex: cursor.layerIndex,
@@ -169,15 +253,12 @@ class Node {
     const childList = this.getNodeList(layerIndex);
     childList.splice(index, 0, ...insertedNodeList);
     // 更新被插入节点所有子节点索引
-    this.updateChildNodeIndex({
-      layerIndex,
-      startIndex: index
-    })
+    this.updateChildNodeIndex({ layerIndex, startIndex: index });
   }
   //根部子节点列表是一维数组。其他方法节点，case节点，是二维数组
-  getNodeList(layerIndex) {
+  getNodeList(layerIndex: number): any[] {
     if (layerIndex !== undefined) {
-      return this.children[layerIndex]
+      return this.children[layerIndex];
     } else {
       return this.children;
     }
@@ -190,12 +271,18 @@ class Node {
     cursor,
     autoReplace = false,
     fieldListAvailable,
+  }: {
+    node: any;
+    index: number;
+    layerIndex: number;
+    cursor: any;
+    autoReplace?: boolean;
+    fieldListAvailable?: any[];
   }) {
     let insertedNode = node;
-    // console.log('node instanceof Node :>> ', !(node instanceof Node));
     if (!(node instanceof Node)) {
       if (!cursor) {
-        console.error('实例化Node，缺少cursor');
+        console.error("实例化Node，缺少cursor");
         return;
       }
       insertedNode = this.initNode({
@@ -217,20 +304,15 @@ class Node {
     const childList = this.getNodeList(layerIndex);
     childList.splice(index, 0, insertedNode);
     // 更新被插入节点所有子节点索引
-    this.updateChildNodeIndex({
-      layerIndex,
-      startIndex: index
-    })
+    this.updateChildNodeIndex({ layerIndex, startIndex: index });
   }
-  autoReplaceSelfField(fieldListAvailable) {
+  autoReplaceSelfField(fieldListAvailable: any[]) {
     const type = this.type || this.paramsType;
     if (type === "self-field") {
-      const selfFieldIsLegal = fieldListAvailable
+      const selfFieldIsLegal = fieldListAvailable!
         .filter((field) => field.currentDS)
         .some((field) => {
-          const {
-            fieldShowName
-          } = field;
+          const { fieldShowName } = field;
           if (fieldShowName === this.fieldShowName) {
             this.fieldColumnName = field.fieldColumnName;
             return true;
@@ -242,7 +324,7 @@ class Node {
       const isDataSetField = !!this.dataSetId;
       let fieldIsLegal;
       if (isDataSourceField) {
-        fieldIsLegal = fieldListAvailable
+        fieldIsLegal = fieldListAvailable!
           .filter((field) => !field.currentDS)
           .some((field) => {
             if (
@@ -255,7 +337,7 @@ class Node {
             }
           });
       } else if (isDataSetField) {
-        fieldIsLegal = fieldListAvailable
+        fieldIsLegal = fieldListAvailable!
           .filter((field) => !field.currentDS)
           .some((field) => {
             if (
@@ -273,28 +355,27 @@ class Node {
       this.isLegal = false;
     }
   }
-  deleteNode(index, layerIndex) {
-    const childList = this.getNodeList(layerIndex)
+  deleteNode(index: number, layerIndex: number) {
+    const childList = this.getNodeList(layerIndex);
     childList.splice(index, 1);
     //更新被删除节点的所有子节点索引
-    this.updateChildNodeIndex({
-      layerIndex,
-      startIndex: index
-    })
-
+    this.updateChildNodeIndex({ layerIndex, startIndex: index });
   }
   // 插入case whenThen层
   insertLayer({
     layerIndex,
-    copy = false
+    copy = false,
+  }: {
+    layerIndex: number;
+    copy: boolean;
   }) {
     if (this.children) {
-      const increaseWhenThen = [];
+      const increaseWhenThen: INode[] = [];
       if (layerIndex > 0 && copy) {
-        const sourceWhenThen = this.children[layerIndex - 1];
-        sourceWhenThen.forEach(node => {
-          increaseWhenThen.push(node.cloneNode())
-        })
+        const sourceWhenThen: INode[] = this.children[layerIndex - 1];
+        sourceWhenThen.forEach((node) => {
+          increaseWhenThen.push(<INode>node.cloneNode());
+        });
       }
       this.children.splice(layerIndex, 0, increaseWhenThen);
       this.updateNodeLayerIndex(layerIndex);
@@ -302,36 +383,35 @@ class Node {
   }
 
   // 删除方法、case层
-  deleteLayer(layerIndex) {
+  deleteLayer(layerIndex: number) {
     this.children.splice(layerIndex, 1);
     this.updateNodeLayerIndex(layerIndex);
   }
   // 更新节点的层索引
-  updateNodeLayerIndex(layerIndex) {
-    this.children.forEach((childList, index) => {
+  updateNodeLayerIndex(layerIndex: number) {
+    this.children.forEach((childList: INode[], index: number) => {
       if (index >= layerIndex) {
-        childList.forEach(childNode => {
+        childList.forEach((childNode) => {
           childNode.layerIndex = index;
-        })
+        });
         // this._updateCaseNodesPathAfterOperateWhenThen(whenThenArr, caseNode.path.split('-').length, 'delete');
       }
-    })
+    });
   }
 
   //获取节点json字符串格式
   get getString() {
     return JSON.stringify(this, (key, value) => {
-      if (key === 'parentNode' && value instanceof Node) {
+      if (key === "parentNode" && value instanceof Node) {
         return undefined;
       }
 
       return value;
-    })
+    });
   }
 }
 
 export default Node;
-
 
 function _initChildrenOfCopiedNode({
   parentNode,
@@ -339,10 +419,16 @@ function _initChildrenOfCopiedNode({
   autoReplace,
   fieldList,
   layerIndex,
+}: {
+  parentNode: INode;
+  children: INode[] | INode[][];
+  autoReplace: boolean;
+  fieldList?: any[];
+  layerIndex?: number;
 }) {
-  children.forEach((childNode, index) => {
+  children.forEach((childNode: INode | INode[], index: number) => {
     if (Array.isArray(childNode)) {
-      parentNode.children.push([]);
+      (<INode[][]>parentNode.children).push([]);
       _initChildrenOfCopiedNode({
         parentNode,
         children: childNode,
@@ -351,17 +437,17 @@ function _initChildrenOfCopiedNode({
         layerIndex: index,
       });
     } else {
-      const newNode = new Node({
+      const newNode: INode = new Node({
         opt: {
-          ...childNode,
-          place: parentNode.name === 'case' ? childNode.place : parentNode.name,
+          ...(<INodeOptKeyObj>childNode),
+          place: parentNode.name === "case" ? childNode.place : parentNode.name,
           nodeIndex: index,
-          layerIndex
+          layerIndex: <number>layerIndex,
         },
-        parentNode
+        parentNode,
       });
       if (autoReplace && newNode.category === "field") {
-        newNode.autoReplaceSelfField(fieldList);
+        newNode.autoReplaceSelfField(fieldList!);
       }
       if (childNode.children) {
         newNode.children = [];
@@ -372,7 +458,7 @@ function _initChildrenOfCopiedNode({
           fieldList,
         });
       }
-      parentNode.children[layerIndex].push(newNode)
+      (<INode[]>parentNode.children)[<number>layerIndex].push(newNode);
     }
-  })
+  });
 }

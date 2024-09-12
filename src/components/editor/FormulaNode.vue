@@ -6,13 +6,12 @@
           @click="$emit('moveCursorToFirst', node)"> </span>
     <component :is="nodeRenderType"
       :node="node" 
-      :prevCursor="prevCursor"
       :cursor="cursor"
       :selectedNode="selectedNode"
       :hoverNode="hoverNode"
       :editable="editable"
       v-on="$listeners"/>
-    <span :class="cursorCls" v-if="showCursor"></span>
+    <span :class="cursorCls" v-show="showCursor"></span>
   </li>
 </template>
 <script>
@@ -46,7 +45,6 @@ export default {
     FormulaMethodNode,
     FormulaCaseNode
   },
-  // inject: ['prevCursor', 'cursor', 'selectedNode', 'hoverNode'],
 
   props: {
     editable: {
@@ -55,7 +53,6 @@ export default {
     },
     node: { type: Object },
     nodeIndex: { type: Number, default: -1 },
-    prevCursor: { type: Object },
     selectedNode: { type: Object },
     cursor: { type: Object },
     hoverNode: { type: Object }
@@ -82,7 +79,12 @@ export default {
     firstPlaceTriggerCls() {
       return [ 'first-place-trigger',
         { 
-          ['active-cursor']: this.prevCursor.path === null && this.cursor.path === this.node.path && this.cursor.place === this.node.place 
+          ['active-cursor']: this.cursor.prevPath === null 
+          && this.cursor.path === this.node.path 
+          && this.cursor.place === this.node.place 
+          && this.cursor.parentNode
+          && this.cursor.parentNode.nodeIndex === this.node.nodeIndex
+          && this.cursor.layerIndex === this.node.layerIndex
         }
       ]
     },
@@ -95,20 +97,46 @@ export default {
     },
     showCursor() {
       if (this.editable) {
-        let show = this.node.path === this.prevCursor.path;
-        if ( this.node.name === 'like' ) {
-          show = show && this.node.children[0][0].disabled
-        }
-        return show;
+        return this.node.path === this.cursor.prevPath
+        // let show = this.node.path === this.cursor.prevPath;
+        // if ( this.node.name === 'like' ) {
+        //   show = show && this.node.children[0][0].disabled
+        // }
+        // this.node.index === this.cursor.index && this.node.nodeIndex
+        console.log('index node cursor:>> ', this.node.nodeIndex , this.cursor.index);
+        console.log('layerIndex node cursor:>> ', this.node.layerIndex, this.cursor.layerIndex);
+        console.log('verticalIndex node cursor:>> ', this.node.verticalIndex, this.cursor.verticalIndex);
+        const show = this.node.nodeIndex === this.cursor.index - 1 
+        && this.node.layerIndex === this.cursor.layerIndex
+        && this.node.verticalIndex === this.cursor.verticalIndex
+        && this.node.parentNode === this.cursor.parentNode
+        
+        show && console.log('showCursor:>>', show)
+
+        return show
+        // return true;
       } else {
         return false;
       }
     },
     activeClass() {
-      return this.cursor.path === `${this.node.path}-0` || this.prevCursor.path === this.node.path
+      // return this.cursor.index === 0 && this.cursor.layerIndex
+      // console.log('this.cursor.parentNode :>> ', this.cursor.parentNode);
+      // const cursorParentNode = this.cursor.parentNode;
+      // return cursorParentNode 
+      // && cursorParentNode.verticalIndex === this.node.verticalIndex 
+      // && cursorParentNode.layerIndex === this.node.layerIndex
+      // && cursorParentNode.nodeIndex === this.node.nodeIndex
+      // return this.cursor.prevPath === this.node.path
+      // return this.cursor.path && this.cursor.path.search(this.node.path) === 0 && this.cursor.verticalIndex === this.node.verticalIndex + 1
+      return this.cursor.path === `${this.node.path}-0` || this.cursor.prevPath === this.node.path
     },
     nodeIsSelected() {
-      return !!this.selectedNode && this.selectedNode.path === this.node.path;
+      // console.log('this.selectedNode 3333333:>> ', this.selectedNode);
+      return !!this.selectedNode 
+      && this.selectedNode.nodeIndex === this.node.nodeIndex
+      && this.selectedNode.layerIndex === this.node.layerIndex
+      && this.selectedNode.verticalIndex === this.node.verticalIndex
     },
   },
   data() {
@@ -207,13 +235,6 @@ export default {
     // padding-right: 5px;
     &.then{
       padding-left: 5px;
-    }
-  }
-  .delete-when-then{
-    height: 20px;
-    vertical-align: text-bottom;
-    span{
-      line-height: 1;
     }
   }
   .case-btn-group{

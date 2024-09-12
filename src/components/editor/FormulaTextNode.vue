@@ -10,7 +10,6 @@ export default {
       required: true
     },
     cursor: { type: Object},
-    prevCursor: { type: Object},
   },
   computed: {
     text() {

@@ -5,7 +5,7 @@
         <el-row class="row-category">
           <div class="btn-category-name">基本符号</div>
           <div class="btn-same-category-group">
-            <el-tooltip :enterable="false"  size="small" placement="top" :disabled="!btn.desc" v-for="btn in baseSignBtnGroup" :key="btn.name" >
+            <el-tooltip  size="small" placement="top" :disabled="!btn.desc" v-for="btn in baseSignBtnGroup" :key="btn.name" >
               <template slot="content">
                 <span v-html="btn.desc"></span>
               </template>
@@ -19,7 +19,7 @@
         <el-row class="row-category" v-show="fieldType !== 'attribute' && fieldType !== 'field'">
           <div class="btn-category-name">聚合函数</div>
           <div class="btn-same-category-group">
-            <el-tooltip :enterable="false"   size="small" placement="top" :disabled="!btn.desc" v-for="btn in aggregateBtnGroup" :key="btn.name" >
+            <el-tooltip  size="small" placement="top" :disabled="!btn.desc" v-for="btn in aggregateBtnGroup" :key="btn.name" >
               <template slot="content">
                 <span v-html="btn.desc"></span>
               </template>
@@ -32,7 +32,7 @@
         <el-row class="row-category">
           <div class="btn-category-name">数学函数</div>
           <div class="btn-same-category-group">
-            <el-tooltip :enterable="false"   size="small" placement="top" v-for="btn in mathBtnGroup" :key="btn.name" >
+            <el-tooltip  size="small" placement="top" v-for="btn in mathBtnGroup" :key="btn.name" >
               <template slot="content">
                 <span v-html="btn.desc"></span>
               </template>
@@ -45,7 +45,7 @@
         <el-row class="row-category">
           <div class="btn-category-name">日期函数</div>
           <div class="btn-same-category-group">
-            <el-tooltip :enterable="false"   size="small" placement="top" v-for="btn in dateBtnGroup" :key="btn.name" >
+            <el-tooltip  size="small" placement="top" v-for="btn in dateBtnGroup" :key="btn.name" >
               <template slot="content">
                 <span v-html="btn.desc"></span>
               </template>
@@ -58,7 +58,7 @@
         <el-row class="row-category">
           <div class="btn-category-name">类型</div>
           <div class="btn-same-category-group">
-            <el-tooltip :enterable="false"  :disabled="!btn.desc"  size="small" placement="top" v-for="btn in dataTypeBtnGroup" :key="btn.name" >
+            <el-tooltip :disabled="!btn.desc"  size="small" placement="top" v-for="btn in dataTypeBtnGroup" :key="btn.name" >
               <template slot="content">
                 <span v-html="btn.desc"></span>
               </template>
@@ -71,7 +71,7 @@
         <el-row class="row-category">
           <div class="btn-category-name">其他</div>
           <div class="btn-same-category-group">
-            <el-tooltip :enterable="false"   size="small" placement="top" v-for="btn in otherBtnGroup" :key="btn.name" >
+            <el-tooltip  size="small" placement="top" v-for="btn in otherBtnGroup" :key="btn.name" >
               <template slot="content">
                 <span v-html="btn.desc"></span>
               </template>
@@ -81,10 +81,10 @@
             </el-tooltip>
           </div>
         </el-row>
-        <el-row class="row-category">
+        <el-row class="row-category" v-show="editable">
           <div class="btn-category-name">自定义常量</div>
           <div class="btn-same-category-group">
-            <el-tooltip :enterable="false"   placement="top" content="请输入常量" :visible="!constantValue && constantTooltipVisible">
+            <el-tooltip  placement="top" content="请输入常量" :visible="!constantValue && constantTooltipVisible">
               <el-input size="small" placeholder="请输入常量" 
                 v-model="constantValue" 
                 @keyup.enter="addConstant"
@@ -96,54 +96,117 @@
         <el-row class="row-category">
           <div class="btn-category-name">常用功能</div>
           <div class="btn-same-category-group">
-            <el-button size="small" @click="deleteNode">删除</el-button>
-            <el-button size="small" @click="emptyNode">清空</el-button>
-            <el-button size="small" @click="pasteNode">粘贴</el-button>
-            <el-button size="small" @click="copyNode" >复制</el-button>
+            <el-button size="small" @click="handleDeleteNode">删除</el-button>
+            <el-button size="small" @click="handleEmptyNode">清空</el-button>
+            <el-button size="small" @click="handlePasteNode" :disabled="!editable">粘贴</el-button>
+            <el-button size="small" @click="handleCopyNode">复制</el-button>
+            <el-button size="small" @click="handleCutNode">剪切</el-button>
+            <!-- 记录总数：{{cursor.snapshots.pool.size}}
+            指针位置：{{cursor.snapshots.pointer}} -->
+            <el-button size="small" @click="handleUndoInsertNode" :disabled="!undoAble">撤销</el-button>
+            <el-button size="small" @click="handleRedoInsertNode" :disabled="!redoAble">恢复</el-button>
+          </div>
+          <div class="switch-enterable-edit">
+            <el-popover 
+              v-if="visible"
+              popper-class="popover-sql-text" 
+              :show-arrow="false" 
+              :visible="previewSqlTextVisible" 
+              trigger="click" 
+              placement="bottom" 
+            >
+              <el-button 
+                size="small" 
+                type="primary" 
+                v-show="editable" 
+                @click="handlePreviewSqlText"
+              >
+                编辑模式
+              </el-button>
+              <div slot="content" class="popover-sql-text-content" >
+                <div class="editor-text-formula" id="sqlTextContainer" >
+                  <FormulaTextEditor
+                    ref="enterableEditBox"
+                    :visible="visible"
+                    :sqlHtml="sqlHtml"
+                    :type="fieldType"
+                    :selectPanel="$refs['selectPanel']"
+                  />
+                  <AutoSelectList 
+                    ref="selectPanel"
+                    v-show="showAutoSelectList" 
+                    :type="fieldType"
+                    listType="field"/>
+                </div>
+                <div class="form-btn-group mt10 mb20 tr gutter">
+                  <p class="popover-sql-text-desc">编辑模式模式下可用函数范围和配置模式相同，字段通过输入 # 检索，暂不支持的函数如有需要需，请联系管理员</p>
+                  <el-button size="small" @click="handleClosePopoverSqlText" >取消</el-button>
+                  <!-- <el-button size="small" type="primary" @click="handleText2Node">解析</el-button> -->
+                </div>
+              </div>
+            </el-popover>
           </div>
         </el-row>
       </div>
     </el-col>
+    
     <el-col :span="24" id="editArea" class="editor-edit-area">
-      <Formula
-        :nodes="rootNode.children"
-        :prevCursor="prevCursor"
-        :cursor="cursor"
-        :selectedNode="selectedNode"
-        :hoverNode="hoverNode"
-        :editable="editable"
-        v-on="$listeners"
-        @moveCursorToFirst="moveCursorToFirst"
-        @moveStructCursorToFirst="moveStructCursorToFirst"
-        @increaseCaseWhenThen="increaseCaseWhenThen"
-        @deleteCase="deleteCase"
-        @moveCursor="moveCursor"
-        @selectedNode="setSelectedNode"
-        @deleteCaseWhenThen="deleteCaseWhenThen"
-        @editCaseStructExp="editCaseStructExp"
-        @editParams="editParams"
-        @setHoverNode="setHoverNode"
-        @editExpression="editExpression"
-        @deleteNode="deleteNode"
-      />
+        <Formula
+          :nodes="rootNode.children"
+
+          :cursor="cursor"
+          :selectedNode="selectedNode"
+          :hoverNode="hoverNode"
+          :editable="editable"
+          v-on="$listeners"
+          @moveCursorToFirst="moveCursorToFirst"
+          @increaseCaseWhenThen="increaseCaseWhenThen"
+          @moveCursor="moveCursor"
+          @selectedNode="setSelectedNode"
+          @deleteCaseWhenThen="deleteCaseWhenThen"
+          @editCaseStructExp="editCaseStructExp"
+          @editParams="editParams"
+          @setHoverNode="setHoverNode"
+          @editExpression="editExpression"
+          @deleteNode="handleDeleteNode"
+        />
     </el-col>
   </el-row>
 </template>
 <script>
 import editorButtonsMap from '@/lib/editorButtonsMap'
 import Formula from '@/components/editor/Formula'
-import { deepCopy } from '@/lib/util'
-import { useModalFieldStore } from '@/store/modal/modalFieldStore'
-import { storeToRefs } from 'pinia'
-import { useFieldStore } from '@/store/dataSet/fieldStore';
+import FormulaTextEditor from '@/components/enterableEditor/FormulaTextEditor'
+import AutoSelectList from '@/components/enterableEditor/AutoSelectList'
 
+import { deepCopy } from '@/lib/util'
+import Node from '@/components/editor/Node.js'
+import Cursor from '@/components/editor/Cursor'
+import formatFormula from '@/utils/formatFormula'
+import { parseFormulaText } from '@/components/enterableEditor/FormulaTextEditor_utils'
+import parseFormula from '@/utils/parseFormula.js'
+
+import { storeToRefs } from 'pinia'
+
+import { useModalFieldStore } from '@/store/modal/modalFieldStore'
+import { useSqlTextEditorStore } from '@/store/modal/sqlTextEditor';
+import { useFieldStore } from '@/store/dataSet/fieldStore';
+import { SUCCESS_CODE } from '@/lib/constant'
 export default {
   name: 'Editor',
-  components: { Formula },
+  components: { Formula, FormulaTextEditor, AutoSelectList },
   props: {
-    fieldType: { type: String, default: 'quota' }, //quota, attribute, field
+    // 指标、属性请求接口成功后设置true
+    // formulaModelReady: { type: Boolean},
+    // formulaModel: {
+    //   type: Array, 
+    //   default: () => []
+    // },
+    fieldType: { type: String }, //quota, attribute, field
     editable: { type: Boolean, default: true },
     visible: { type: Boolean },
+    fieldListAvailable: { type: Array}
+
   },
   computed: {
     baseSignBtnGroup () {
@@ -164,26 +227,33 @@ export default {
     otherBtnGroup () {
       return editorButtonsMap.btnGroup.filter(btn => btn.layoutType === 'other');
     },
+    undoAble() {
+      return this.cursor.snapshots.pointer > 1;
+    },
+    redoAble() {
+      return this.cursor.snapshots.pool.get(this.cursor.snapshots.pointer);
+    }
   },
   watch: {
     visible: function(value) {
+      console.log('value :>> ', value);
       if (!value) {
-        this.prevCursor = this._initPrevCursor();
-        this.cursor = this._initCursor();
+        this.cursor = new Cursor(this.rootNode);
         this.selectedNode = null;
         this.copiedNode = null;
+        this.previewSqlTextVisible = false;
         
+      } else {
+        // console.log('this.rootNode :>> ', this.rootNode);
+        this.cursor.index = this.rootNode.children.length;
+        this.cursor.initPrev(this.rootNode.children.slice(-1)[0])
+        this.cursor.pushSnapShot(this.rootNode)
       }
     },
   },
   data() {
     return {
-      // rootNode: {
-      //   name: 'root',
-      //   children: this.formulaModel
-      // },
-      cursor: this._initCursor(),
-      prevCursor: this._initPrevCursor(),
+      cursor: new Cursor(this.rootNode),
       hoverNode: null,
 
       constantValue: '',
@@ -191,6 +261,7 @@ export default {
 
       selectedNode: null,
       copiedNode: null,
+      previewSqlTextVisible: false
     }
   },
   setup() {
@@ -199,76 +270,177 @@ export default {
     // dataSetStore.$reset()
     // fieldStore.$reset();
     const { fieldConfigInfo, rootNode } = storeToRefs(modalFieldStore)
+    const sqlTextEditorStore = useSqlTextEditorStore();
+    const { showAutoSelectList, sqlHtml } = storeToRefs(sqlTextEditorStore);
+
     return {
       modalFieldStore,
       fieldConfigInfo,
-      rootNode
+      rootNode,
+      sqlHtml,
+      showAutoSelectList,
     }
   },
   created() {
-    // document.addEventListener('paste', async (e) => {
-    //   e.preventDefault();
-    //   const text = await navigator.clipboard.readText();
-    //   console.log('Pasted text: ', text);
-    // });
+    this.cursor = new Cursor(this.rootNode);
+        this.selectedNode = null;
+        this.copiedNode = null;
+        this.previewSqlTextVisible = false;
+    console.log('this.cursor :>> ', this.cursor, this.rootNode);
   },
   methods: {
-    
-
-    // _initRootNode(){
-    //   return {
-    //     name: 'root',
-    //     children: []
+    async text2Node() {
+      const result = await this.$API.manage.text2node({
+        fieldText: this.getSqlText()
+      })
+      if (result.code === SUCCESS_CODE) {
+        const fieldStore = useFieldStore();
+        const { fieldList } = fieldStore;
+        const autoReplace = true;
+        const formulaRenderModel = parseFormula(result.data.fieldConfig.nodes, this.fieldListAvailable, autoReplace); 
+        this.rootNode.children = formulaRenderModel
+      }
+      return result;
+    },
+    async node2Text() {
+      const result = await this.$API.manage.node2text({
+        fieldConfig: {
+          type: 'nodeList',
+          nodes: formatFormula(this.rootNode.children)
+        }
+      })
+      if (result.code === SUCCESS_CODE) {
+        const sqlText = result.data.fieldText;
+        const fieldStore = useFieldStore();
+        const { fieldList } = fieldStore;
+        const autoReplace = true;
+        this.sqlHtml = parseFormulaText(sqlText, this.fieldListAvailable, autoReplace);
+        
+      }
+      return result;
+    },
+    handlePreviewSqlText() {
+      if (!this.previewSqlTextVisible) {
+        this.node2Text().then((result) => {
+          if (result.code === SUCCESS_CODE) {
+            this.previewSqlTextVisible = true;
+          }
+        })
+      } else {
+        this.previewSqlTextVisible = false;
+      }
+    },
+    handleText2Node() {
+      this.text2Node().then((result) => {
+        if (result.code === SUCCESS_CODE) {
+          this.previewSqlTextVisible = false;
+        }
+      })
+    },
+    handleClosePopoverSqlText() {
+      this.previewSqlTextVisible = false;
+      this.sqlHtml = '';
+      this.$refs['enterableEditBox'].$el.innerHTML = '';
+    },
+    // handleKeyDown(e) {
+    //   console.log('showAutoSelectList :>> ', this.showAutoSelectList);
+    //   if (e.key === 'ArrowDown' && this.showAutoSelectList) {
+    //     e.preventDefault();
     //   }
     // },
-    async copyNode(){
+    getSqlText() {
+      const $editBox = this.$refs['enterableEditBox'];
+      return $editBox.getSqlText();
+    },
+    contenteditableKeyUp(e) {
+      let selection = window.getSelection ? window.getSelection() : document.selection
+      let range = selection.createRange ? selection.createRange() : selection.getRangeAt(0)
+      // console.log("selection, range :>> ", selection, range);
+    },
+    handleUndoInsertNode(){
+      let snapshot;
+      if (this.cursor.snapshots.pointer > 1) {
+        snapshot = this.cursor.snapshots.pool.get(this.cursor.snapshots.pointer - 2)
+        --this.cursor.snapshots.pointer;
+        this._resetFormula(snapshot)
+      }
+    },
+    handleRedoInsertNode() {
+      const snapshot = this.cursor.snapshots.pool.get(this.cursor.snapshots.pointer);
+      if (snapshot) {
+        ++this.cursor.snapshots.pointer;
+        this._resetFormula(snapshot)
+      }
+    },
+    _resetFormula(snapshot) {
+      this.rootNode.children.splice(0);
+      this.rootNode.reset(snapshot.rootNode);
+      this.cursor.reset(snapshot.cursor);
+      // console.log('rest this.rootNode :>> ', this.rootNode);
+    },
+    handleEmptyNode() {
+      this.rootNode.children.splice(0);
+      this.cursor.init();
+      this.cursor.pushSnapShot();
+      this.selectedNode = null;
+    },
+    async handleCopyNode({isCut = false}){
       let copyNode, copySuccessMsg;
+      let operateText = isCut ? '剪切' : '复制';
       if (this.selectedNode) {
-        copyNode = deepCopy(this.selectedNode);
+        copyNode = this.selectedNode;
         let nodeName = copyNode.name || '';
-        copySuccessMsg = `${nodeName}公式复制成功`;
+        let nodeTypeName = copyNode.type === 'field' ? '字段' : '公式';
+        copySuccessMsg = `${nodeName}${nodeTypeName}${operateText}成功`;
       } else {
         if (this.rootNode.children.length === 0) {
           this.$message({
-            message: '您还没有添加公式，复制失败！',
+            message: `您还没有添加公式，${operateText}失败！`,
             type: 'error',
           })
-          return;
+          return false;
         } else {
-          copyNode = deepCopy(this.rootNode);
-          copySuccessMsg = '公式复制成功';
+          copyNode = this.rootNode;
+          copySuccessMsg = `公式${operateText}成功`;
         }
       }
-      this.$copyText(JSON.stringify(copyNode)).then(text => {
+      const nodeJsonString = copyNode.getString;
+      return this.$copyText(nodeJsonString).then(text => {
         this.$message({
           message: copySuccessMsg,
           type: 'success'
         })
-        this.selectedNode = null;
+        if (!isCut) {
+          this.selectedNode = null;
+        }
+        return true;
       }, (err) => {
         this.$message({
-          message: '复制失败',
+          message: `${operateText}失败`,
           type: 'error'
         });
         console.error(err);
+        return false;
       })
     },
-    async getClipboardNode() {
-      try {
-        const text = await navigator.clipboard.readText();
-        console.log('text :>> ', text);
-        return JSON.parse(text);
-      } catch (err) {
-        console.error('Failed to read clipboard contents: ', err);
-        return false;
-      }
+    handleCutNode(){
+      this.handleCopyNode({isCut: true}).then(copySuccess => {
+        if (copySuccess) {
+          if (this.selectedNode) { //有选中节点，执行删除
+            this.handleDeleteNode();
+            this.selectedNode = null;
+          } else {
+            this.handleEmptyNode(); //剪切整个公式，执行清空
+          }
+        }
+      })
     },
     _validClipboardNode(clipboardText) {
       const regValidJson = /^\{(.+:.+,*){1,}\}$/;
       let validResult = regValidJson.test(clipboardText);
       if (validResult) {
         const node = JSON.parse(clipboardText);
-        if (!node && !node.paramsType){
+        if (!node && !node.renderType){
           this.$message({
             message: '剪贴板内容不是有效的节点',
             type: 'warning'
@@ -284,37 +456,23 @@ export default {
       return validResult;
       
     },
-    emptyNode() {
-      this.rootNode.children.splice(0);
-      this.prevCursor = this._initPrevCursor();
-      this.cursor = this._initCursor();
-      this.selectedNode = null;
-    },
-    async pasteNode(){
+    async handlePasteNode(){
       try {
         const clipboardText = await navigator.clipboard.readText(); //读取剪贴板内容
-        // console.log('this.copiedNode :>> ', this.copiedNode);
         if (this._validClipboardNode(clipboardText)) { //验证剪贴板文字是否合法的节点对象json字符串
           this.copiedNode = JSON.parse(clipboardText);
-
+          const copiedNodeJson = JSON.parse(clipboardText);
+          console.log('this.fieldListAvailable :>> ', this.fieldListAvailable);
           if (this.copiedNode.name === 'root') {
-            // this.rootNode = this.copiedNode;
-            const lastNodeInRoot = this.copiedNode.children[this.copiedNode.children.length - 1];
-            // this._updateCursorAfterPaste(lastNodeInRoot);
-            this.copiedNode.children.forEach(node => {
-              this._insertCopiedNode(node);
-            })
+            this.cursor.patchInsertNodeOfPaste(copiedNodeJson.children, this.fieldListAvailable)
           } else {
-            this._insertCopiedNode(this.copiedNode);
-            // this._initCopiedNode(this.copiedNode);
-            // this._updateNodePath(this.copiedNode);
-            // this._insertNode(this.copiedNode)
-            // this._updateCursorAfterPaste(this.copiedNode);
+            // const pasteNode = this._initCopiedNode(copiedNodeJson)
+            this.cursor.insertNodeOfPaste(copiedNodeJson, this.fieldListAvailable)
           }
+          // this.cursor.pushSnapShot();
   
           this.copiedNode = null;
           this.selectedNode = null; //复制选中节点粘贴后，清空选中节点即取消此节点的高亮下划线样式
-          console.log('after paste node this.rootNode :>>>>>>>>>>>> ', this.rootNode);
         }
       } catch (err) {
         this.$message({
@@ -324,40 +482,16 @@ export default {
         console.error('Failed to read clipboard contents: ', err);
       }
     },
-    _insertCopiedNode(copiedNode) {
-      this._initCopiedNode(copiedNode);
-      this._updateNodePath(copiedNode);
-      this._insertNode(copiedNode);
-      this._updateCursorAfterPaste(copiedNode);
-    },
-    _initCopiedNode(copiedNode){
-      copiedNode.place = this.cursor.place;
-      copiedNode.path = this.cursor.path;
-      if (copiedNode.children) {
-        this._initChildrenOfCopiedNode(copiedNode, copiedNode.children);
-      }
-    },
-    _initChildrenOfCopiedNode(parentNode, children, arrIndex){
-      children.forEach((node, index) => {
-        if (Array.isArray(node)) {
-          this._initChildrenOfCopiedNode(parentNode, node, index);
-        } else {
-          node.place = parentNode.name === 'case' ? node.place : parentNode.name;
-          node.path = arrIndex === undefined ? `${parentNode.path}-${index}` : `${parentNode.path}-${arrIndex}-${index}`;
-          if (node.children) {
-            this._initChildrenOfCopiedNode(node, node.children);
-          }
-        }
-      })
-    },
     addConstant(){
       if (!!this.constantValue) {
         this.editExpression({
           btn: {
-            type: 'constant',
+            category: 'constant',
             renderType: 'tag',
             paramsType: 'constant',
-            value: this.constantValue
+            value: this.constantValue,
+            editable: false,
+            tooltipVisible: false,
           }
         })
         this.constantValue = '';
@@ -368,365 +502,15 @@ export default {
         }, 2000);
       }
     },
-    _initCursor(){
-      return { path: '0', place: 'rootChildren'}
-    },
-    _initPrevCursor(node){
-      //type主要用于前一个节点是数字用于合并
-      if (node) {
-        return {
-          path: node.path,
-          place: node.place,
-          category: node.category
-        }
-      } else {
-        return {path: null, place: null, category: null}
-      }
-    },
-    _updateNodePath(node, updateType = 'insert'){
-      // 插入或删除，找到此节点的父节点，判断同层有无其他节点，有则更新其他节点的path
-      if (this.rootNode.children.length === 0) return;
-      
-      let parentNode = this._getParentNode(node);
-      let nodeList = !!parentNode.children && parentNode.children || parentNode;
-      let nodeAmount = nodeList.length; //node同层节点数2
-      let nodeIndex = +node.path.split('-').pop(); // 插入节点索引
-      if ( (nodeIndex === nodeAmount  && updateType === 'insert') || (nodeIndex === nodeAmount  && updateType === 'delete')) return;
-      // this._walkUpdateNodePath({parentNode, startIndex: nodeIndex, updateType})
-      // if (nodeIndex + 1 < nodeAmount) {
-        this._updateNodePathRecursion( nodeList, nodeIndex, node.path.split('-').length - 1, updateType);
-        // function recursion(nodeList, startIndex, pathIndex, updateType) {
-        //   nodeList.some((node, index) => {
-        //     // 从开始索引处更新后面节点path，path+1
-        //     if (index >= startIndex) {
-        //       if (Array.isArray(node)) {
-        //         recursion(node, 0, pathIndex, updateType);
-        //         return true;
-        //       }
-        //       let pathArr = node.path.split('-');
-        //       if (updateType === 'insert') {
-        //         pathArr[pathIndex] = String(+pathArr[pathIndex] + 1);
-        //       } else if (updateType === 'delete') {
-        //         pathArr[pathIndex] = String(+pathArr[pathIndex] - 1);
-        //       }
-        //       node.path = pathArr.join('-');
-        //       if (node.children) {
-        //         recursion(node.children, 0, pathIndex, updateType);
-        //       }
-        //     }
-        //   })
-        // }
-      // }
-    },
-    _walkUpdateNodePath({ parentNode, startIndex, levelIndex, updateType}) {
-      const nodeList = parentNode.children || parentNode; //删除、插入操作前的同层节点列表
-      nodeList.some((node, index) => {
-        if (index >= startIndex) {
-          const parentNodePath = parentNode.path || '';
-          let nodeIndex;
-          if (updateType === 'insert') {
-            nodeIndex = index + 1;
-          } else if (updateType === 'delete') {
-            nodeIndex = index - 1;
-          }
-          node.path = levelIndex === undefined ? `${parentNodePath}-${nodeIndex}` : `${parentNodePath}-${levelIndex}-${nodeIndex}`
-        }
-      })
-    },
-    _updateNodePathRecursion(nodeList, startIndex, pathIndex, updateType) {
-      nodeList.some((node, index) => {
-        // 从开始索引处更新后面节点path，path+1
-        if (index >= startIndex) {
-          if (Array.isArray(node)) {
-            this._updateNodePathRecursion(node, 0, pathIndex, updateType);
-            // return true;
-          } else {
-            let pathArr = node.path.split('-');
-            if (updateType === 'insert') {
-              pathArr[pathIndex] = String(+pathArr[pathIndex] + 1);
-            } else if (updateType === 'delete') {
-              pathArr[pathIndex] = String(+pathArr[pathIndex] - 1);
-            }
-            node.path = pathArr.join('-');
-            if (node.children) {
-              this._updateNodePathRecursion(node.children, 0, pathIndex, updateType);
-            }
-          }
-        }
-      })
-    },
-
     _message(message, type){
       this.$message({
         message,
         type
       })
     },
-    _getSameLevelNodeListOfCursor(){
-      let cursorPathArr = this._getCursorPathArr();
-      cursorPathArr.pop();
-      let node = this.rootNode
-      cursorPathArr.forEach(levelIndex => {
-        node = node.children && node.children[levelIndex] || node[levelIndex];
-      })
-      return node.children && node.children || node;
-    },
-    _updateCursor(node) {
-      if (node.renderType === 'text' || node.renderType === 'tag') {
-        this.prevCursor = this._initPrevCursor(node);
-        this.cursor.path = this._pathStepForward(node.path);
-      } else if (node.renderType === 'fixedParams' || node.renderType === 'dynamicParams'){
-        this.prevCursor = this._initPrevCursor();
-        this.cursor.path = `${this.cursor.path}-0-0`;
-        this.cursor.place = node.renderType;
-      } else if (node.renderType === 'customParams') {
-        this.prevCursor = this._initPrevCursor(node);
-        this.cursor.path = this._pathStepForward(node.path);
-        this.cursor.place = node.place;
-      } else if (node.renderType === 'case'){
-        this.prevCursor = this._initPrevCursor();
-        this.cursor.path = `${this.cursor.path}-0-0`;
-        this.cursor.place = 'caseCondition';
-      }
-    },
-
-    _updateCursorAfterDelete(deletedNode) {
-      if (deletedNode.path === '0') {
-        // 删除的是最后一个节点，初始化光标；
-        this.prevCursor = this._initPrevCursor();
-        this.cursor = this._initCursor();
-      } else {
-
-        // 删除方法、if参数位置或case条件、默认值位置最后一个节点
-        if ( 
-        ( deletedNode.place === 'fixedParams' || 
-          deletedNode.place === 'dynamicParams' || 
-          deletedNode.place === 'caseCondition' || 
-          deletedNode.place === 'caseDefaultValue'
-        ) && deletedNode.path.slice(-1) === '0') {
-          this.prevCursor = this._initPrevCursor();
-          this.cursor.path = deletedNode.path;
-          return;
-        } else if (deletedNode.place === 'caseValue'){
-          // 节点末位索引等于caseValue手节点的末尾索引 或者首位节点undefined（删除首位）初始化prevCursor
-          // 否则prevCursor后退一步 cursor等于node。path
-          const sameLevelNodeList = this._getSameLevelNodeListOfCursor();
-          
-          const sameLevelValueNodeList = sameLevelNodeList.filter(node => node.place === deletedNode.place);
-          const firstValueNode = sameLevelValueNodeList[0];
-          if (!firstValueNode || firstValueNode.path === deletedNode.path ) {
-            this.prevCursor = this._initPrevCursor();
-            this.cursor.path = deletedNode.path;
-          } else {
-            this.prevCursor.path = this._pathStepBack(deletedNode.path);
-            this.cursor.path = deletedNode.path;
-          }
-        } else {
-          this.prevCursor.path = this._pathStepBack(deletedNode.path);
-          this.cursor.path = deletedNode.path;
-        }
-        console.log('delete this.cursor :>> ', this.cursor);
-        console.log('delete this.prevCursor :>> ', this.prevCursor);
-        
-      }
-    },
-    _updateCursorAfterPaste(pasteNode) {
-      this.prevCursor.path = pasteNode.path;
-      this.prevCursor.category = pasteNode.category;
-      this.prevCursor.place = pasteNode.category;
-      this.cursor.path = this._pathStepForward(pasteNode.path);
-      this.cursor.place = pasteNode.category;
-    },
-    _pathStepBack(path) {
-      let pathArr = path.split('-');
-      let last = +pathArr.pop();
-      pathArr.push(String(last - 1));
-      return pathArr.join('-');
-    },
-    _pathStepForward(path) {
-      let pathArr = path.split('-');
-      let last = +pathArr.pop();
-      pathArr.push(String(last + 1));
-      return pathArr.join('-');
-    },
-    // _getStructNodeList(targetNodeList, nodeType){
-    //   return targetNodeList.filter(node => {
-    //     return node.place === nodeType;
-    //   })
-    // },
-    _getParentNode(opertedNode) {
-      let pathArr = this._getCursorPathArr(opertedNode.path);
-      pathArr.pop();
-
-      let node = this.rootNode;
-      if (pathArr.length === 0) return node;
-      pathArr.forEach((pathIndex) => {
-        node = node.children && node.children[pathIndex] || node[pathIndex];
-      });
-      return node;
-    },
     _getCursorPathArr(cursorPath) {
       let path = cursorPath || this.cursor.path;
       return path.split('-');
-    },
-
-    _getInCursorNode(cursorPath){
-      // 获取光标处的节点
-      // 调用_getBeforeCursorNode方法，传参光标后一个位置的路径
-      let afterCursorPath;
-      if (this._getCursorPathArr().length === 1) {
-        afterCursorPath = String(+this.cursor.path + 1);
-      } else {
-        let pathArr = this._getCursorPathArr();
-        let last = +pathArr.pop() + 1;
-        pathArr.push(String(last));
-        afterCursorPath = pathArr.join('-');
-      }
-      return this._getBeforeCursorNode(afterCursorPath);
-    },
-    _getParentNodeOfThePath(cursorPath) {
-      // 获取光标处父节点
-      let cursorPathArr = this._getCursorPathArr(cursorPath);
-      cursorPathArr.pop();
-      let node = this.rootNode;
-      // if (cursorPathArr.length === 0) return this.rootNode;
-      cursorPathArr.forEach((nodeLevelIndex, index) => {
-        node = node.children && node.children[nodeLevelIndex] || node[nodeLevelIndex];
-      })
-      return node;
-    },
-    _getBeforeCursorNode(cursorPath = this.cursor.path) {
-      // 获取光标前的节点
-      let cursorPathArr = cursorPath.split('-');
-      let node = this.rootNode;
-      if (cursorPathArr.length === 1) {
-        return node.children[+cursorPath - 1]
-      } else {
-        cursorPathArr.some((cursorPathIndex, index) => {
-          let paramsIndex = cursorPathIndex;
-          if (cursorPathArr.length - 1 === index) {
-            paramsIndex -= 1;
-            // 光标在方法块中索引为0时，返回上一级节点；
-            if (paramsIndex < 0 && index === cursorPathArr.length - 1) return true;
-          }
-          node = node.children && node.children[paramsIndex] || node[paramsIndex];
-          // case语句块中，查询到组不存在返回；
-          if (!node) return true;
-        });
-        return node;
-      }
-    },
-    // 在光标处插入节点
-    _insertNode(insertedNode){
-      const cursorPathArr = this.cursor.path.split('-');
-      const startIndex = +cursorPathArr.pop();
-      const parentNode = this._getParentNodeOfThePath(this.cursor.path);
-      const nodeList = parentNode.children && parentNode.children || parentNode;
-      // 移动插入节点后面其他节点的位置
-      // for(let index = nodeList.length; index >= startIndex; index--) {
-      //   nodeList.splice(index, 1 , nodeList[index - 1]);
-      // }
-      // console.log('nodeList 2:>> ', deepCopy(nodeList) );
-      // debugger
-      nodeList.splice(startIndex, 0, insertedNode);
-    },
-    _triggerBtnOperate(parentNode, node, btn){
-      if (this.cursor.path === null) return; //输入like节点时，cursor.path = null
-      // 光标位置有节点，插入数字节点_insertNode()。否则新增push(node)
-      if (this._getInCursorNode()) {
-        // 1.先更新插入位置后其他节点的path
-        // 2.插入节点
-        this._updateNodePath(node);
-        this._insertNode(node);
-      } else {
-        parentNode.children && parentNode.children.push(node) || parentNode.push(node);
-      }
-      // 更新光标
-      // this.updateCursor(node);
-      this._updateCursor(node);
-    },
-    _initNode(btn){
-      const node = { ...btn };
-      node.place = this.cursor.place;
-      if (btn.renderType === 'fixedParams') {
-        let paramAmount = btn.paramAmount;
-        node.children = [];
-        if (paramAmount === undefined) {
-          node.children.push([]);
-        } else {
-          while (paramAmount) {
-            node.children.push([]);
-            paramAmount-- ;
-          }
-        }
-      } else if (btn.renderType === 'dynamicParams'){
-        node.children = [[],[]];
-      } else if (btn.renderType === 'customParams'){
-        node.children = [[{type: 'constant', renderType: 'constant', paramsType: 'constant', value: null, disabled: false, tooltipVisible: false}]];
-      } else if (btn.renderType === 'case') {
-        // 默认有when then和default，最后一个数组存default
-        node.children = [[],[]];
-      } else if (btn.renderType === 'text' && btn.category === 'digit') {
-        node.value = btn.name;
-      }
-      node.path = this.cursor.path;
-
-      return node;
-    },
-    _updateCaseNodesPathAfterDeleteWhenThen(nodes, level) {
-      nodes.forEach((node, index) => {
-        let pathArr = node.path.split('-');
-        let oldLevel = pathArr[level];
-        pathArr[level] = --oldLevel
-        node.path = pathArr.join('-');
-        if (node.children && node.children.length) {
-          this._updateCaseNodesPathAfterDeleteWhenThen(nodes, level);
-        }
-      })
-    },
-    deleteCaseWhenThen({ caseNode, whenThenIndex }) {
-      caseNode.children.splice(whenThenIndex, 1);
-      const deletedWhenThenPath = `${caseNode.path}-${whenThenIndex}`;
-      // 0-0-1
-      // 0-0-0-0
-      // 更新删除whenThen组之后节点的path
-      caseNode.children.forEach((whenThenArr, index) => {
-        if (index >= whenThenIndex) {
-          this._updateCaseNodesPathAfterDeleteWhenThen(whenThenArr, caseNode.path.split('-').length);
-        }
-      })
-      // 更新光标
-      const deletedWhenThenPathDepth = deletedWhenThenPath.split('-').length;
-      const sameDepthCursorIndex = +this.cursor.path.split('-')[deletedWhenThenPathDepth - 1];
-      if (whenThenIndex === sameDepthCursorIndex) {
-        if (whenThenIndex === 0) {
-          this.prevCursor = this._initPrevCursor(caseNode);
-          this.cursor.path = this._pathStepForward(caseNode.path);
-          this.cursor.place = caseNode.place;
-        } else {
-          const prevWhenThenArr = caseNode.children[whenThenIndex - 1];
-          const conditionNodeList = prevWhenThenArr.filter(node => node.place === 'caseCondition');
-          const valueNodeList = prevWhenThenArr.filter(node => node.place === 'caseValue');
-          if (valueNodeList.length === 0 ) {
-            this.prevCursor = this._initPrevCursor();
-            this.cursor.path = `${caseNode.path}-${whenThenIndex - 1}-${conditionNodeList.length}`;
-            this.cursor.place = 'caseValue';
-          } else {
-            const lastValueNode = valueNodeList.slice(-1)[0];
-            this.prevCursor = this._initPrevCursor(lastValueNode);
-            this.cursor.path = this._pathStepForward(lastValueNode.path);
-            this.cursor.place = lastValueNode.place;
-          }
-          // this.prevCursor.path = .slice(-1)[0].path;
-        }
-      } else if (whenThenIndex < sameDepthCursorIndex) {
-        if (this.prevCursor.path) {
-          const prevCursorArrIndex = this.prevCursor.path.slice(-3, -2);
-          this.prevCursor.path = `${caseNode.path}-${prevCursorArrIndex - 1}-${this.prevCursor.path.slice(-1)}`;
-        }
-        const cursorArrIndex = this.cursor.path.slice(-3, -2);
-        this.cursor.path = `${caseNode.path}-${cursorArrIndex - 1}-${this.cursor.path.slice(-1)}`
-      }
     },
     //树形结构布局：鼠标进入记录节点
     setHoverNode(hoverNode){
@@ -737,33 +521,43 @@ export default {
       nodeListIndex,
       place
     }){
-      this.prevCursor.category = null;
-      this.prevCursor.path = null;
-      this.prevCursor.place = place;
+      this.cursor.initPrev();
+      // this.prevCursor.category = null;
+      // this.cursor.prevPath = null;
+      // this.cursor.prevPlace = place;
       this.cursor.place = place;
+      this.cursor.parentNode = node;
       const parentNodePath = node.path;
       if(place === 'caseCondition' || place === 'caseDefaultValue'){
-        this.cursor.path = `${parentNodePath}-${nodeListIndex}-0`;
+        this.cursor.index = 0;
+        this.cursor.layerIndex = nodeListIndex;
+        // this.cursor.path = `${parentNodePath}-${nodeListIndex}-0`;
       } else if (place === 'caseValue') {
         const sameLevelConditionNodeList = node.children[nodeListIndex].filter(node => node.place === 'caseCondition');
         const sameLevelConditionNodeLen = sameLevelConditionNodeList.length;
-        // if (sameLevelConditionNodeLen === 0) {
-        //   this.$message({
-        //     message: '有条件未设置，不可新增！',
-        //     type: 'info'
-        //   })
-        //   return ;
-        // }
-        this.cursor.path = `${parentNodePath}-${nodeListIndex}-${sameLevelConditionNodeLen}`;
+        this.cursor.index = sameLevelConditionNodeLen;
+        this.cursor.layerIndex = nodeListIndex;
       }
     },
+    _cursorDisabled() {
+      if (this.cursor.disabled){
+        this.$message({
+          message: '有未设置的常量，不可编辑！',
+          type: 'info'
+        })
+      }
+      return this.cursor.disabled;
+    },
     editParams({ node, paramsArrIndex, place}){
-      let parentNodePath = node.path;
-      this.prevCursor.path = null;
-      this.prevCursor.category = null;
-      this.prevCursor.place = place;
-      this.cursor.path = `${parentNodePath}-${paramsArrIndex}-0`;
+      if (this._cursorDisabled()) return ;
+      this.cursor.initPrev();
+      // this.cursor.prevPath = null;
+      // this.prevCursor.category = null;
+      // this.cursor.prevPlace = place;
+      this.cursor.index = 0;
+      this.cursor.layerIndex = paramsArrIndex;
       this.cursor.place = place;
+      this.cursor.parentNode = node;
       if (node.renderType === 'dynamicParams') {
         if (node.children.filter(paramsArr => paramsArr.length === 0).length  <= 1){
           node.children.push([]);
@@ -771,10 +565,23 @@ export default {
       }
     },
     editExpression({btn}) {
-      if (!this.editable) return;
+      if (!this.editable || this.previewSqlTextVisible) return;
+      // 输入常量禁用光标
+      if (this._cursorDisabled()) return ;
       // 输入常量时，cursor.path = null
       if (!this.cursor.path) return;
-      let node = this._initNode(btn);
+      // let node = this._initNode(btn);
+      console.log('this.cursor.verticalIndex :>> ', this.cursor.verticalIndex);
+      const node = new Node({
+        opt: {
+          ...btn,
+          place: this.cursor.place,
+          nodeIndex: this.cursor.index,
+          layerIndex: this.cursor.layerIndex,
+          verticalIndex: this.cursor.verticalIndex
+        },
+        parentNode: this.cursor.parentNode,
+      })
       
 
       // 点击函数、语句块，增加子层id
@@ -794,151 +601,112 @@ export default {
       // 点击数字、操作符
       // this.btnOperateMap[btn.renderType](parent, node, btn);
       if (btn.category === 'digit'
-        && this.prevCursor.category === btn.category
-        &&this.prevCursor.path.split('-').length === node.path.split('-').length) {
+        && this.cursor.prevCategory === btn.category
+        // &&this.cursor.layerIndex === node.layerIndex) {
+        &&this.cursor.prevPath.split('-').length === node.path.split('-').length) {
           // 光标前的节点类型和本次输入节点都是数字式，不做新增节点操作，更新光标前节点的值
-          let path = this.prevCursor.path;
-          // this._getBeforeCursorNode(this.cursor.path);
-          this._getBeforeCursorNode();
-          let beforeCursorNode = this._getBeforeCursorNode(this.cursor.path);
-          let value = beforeCursorNode.value;
-          beforeCursorNode.value = `${value}${btn.name}`; 
-          // this.prevCursor = JSON.parse(JSON.stringify(this.cursor));
-          // this.cursor = Object.assign(this.cursor, btn);
-          // this.cursor = JSON.parse(JSON.stringify(this.prevCursor));
+          const beforeCursorNode = this.cursor.getBeforeCursorNode();
+          const nodeValue = beforeCursorNode.value;
+          beforeCursorNode.value = `${nodeValue}${btn.name}`; 
+          this.cursor.pushSnapShot(this.rootNode)
       }  else {
-        this._triggerBtnOperate(parent, node, btn);
+        this.cursor.insertNode(node)
       }
+      this.selectedNode = null;
     },
-    // 根据cursor.path计算得到被删除节点的同层节点列表，然后根据被删除节点索引调用splice方法删除
-    deleteNode() {
-      if (this.prevCursor.path === null && this.prevCursor.place) {
+    // 点击删除按钮，删除节点
+    handleDeleteNode() {
+      if (this.cursor.prevPath === null && this.cursor.prevPlace) {
         this._message('别删了，已经到头啦！', 'info');
         return;
       }
-      let cursorPathArr = this._getCursorPathArr();
-      let node = this.rootNode;
-      cursorPathArr.some((cursorPathIndex, index) => {
-        let deleteIndex;
-          // 光标索引等于0，不能再删除；
-        if (cursorPathArr.length - 1 === index) {
-          // 在最里层，删除光标前一个节点
-          deleteIndex = cursorPathIndex-1;
-        }
-        // 查找到删除索引后删除节点，否则继续取下一级节点
-        if (deleteIndex !== undefined) {
-          let nodeList = node.children && node.children || node;
-          let deleteNode = nodeList[deleteIndex];
-          let prevDelNode = nodeList[deleteIndex - 1];
-          if (this.prevCursor.path === null) {
-            this._message('别删了，到头啦！', 'info');
-            return;
-          } else {
-            // 删除语句里节点，删除首位节点后面还有节点时，
-            
-            let delNode = nodeList.splice(deleteIndex, 1)[0];
-            this._updateNodePath(delNode,'delete');
-            this._updateCursorAfterDelete(delNode)
-            
-            return true;
-          }
-        } else {
-          node = node.children && node.children[cursorPathIndex] || node[cursorPathIndex];
-        }
-      })
+      if (this.cursor.index == 0) {
+        this._message('别删了，已经到头啦！', 'info');
+        return 
+      }
+      this.cursor.parentNode.deleteNode(this.cursor.index - 1, this.cursor.layerIndex);
+      this.cursor.updateAfterDeleteNode();
+      this.cursor.pushSnapShot();
       if (this.rootNode.children.length === 0) {
         this.selectedNode = null;
       }
     },
     moveCursorToFirst(node) {
-      console.log('moveCursorToFirst node :>> ', node);
-      this.prevCursor = this._initPrevCursor();
-      this.cursor.path = node.path;
+      this.cursor.initPrev();
+      this.cursor.index = node.nodeIndex;
+      this.cursor.layerIndex = node.layerIndex
       this.cursor.place = node.place;
-    },
-    /**
-     * caret移动到首位
-     * 可移动到首位的位置：rootChildren fixedParams dynamicParams caseCondition caseValue caseDefaultValue
-     */
-    moveStructCursorToFirst(parentNode, place, nodeArrIndex) {
-      // let nodeList = parentNode.children && parentNode.children || parentNode[nodeArrIndex];
-      if (place === 'rootChildren') {
-        this.prevCursor = this._initPrevCursor();
-        this.cursor = this._initCursor();
-      } else if (place === 'fixedParams' || place === 'dynamicParams' || place === 'caseCondition' || place === 'caseDefaultValue') {
-        this.prevCursor = this._initPrevCursor();
-        // Object.assign(this.prevCursor, this._initPrevCursor())
-        this.cursor.path = `${parentNode.path}-${nodeArrIndex}-0`;
-        this.cursor.place = place;
-      } else if (place === 'caseValue') {
-        const sameLevelWhenThenArr = parentNode.children[nodeArrIndex];
-        const sameLevelConditionNodeList = sameLevelWhenThenArr.filter(node => node.place === 'caseCondition');
-        this.prevCursor = this._initPrevCursor();
-        this.cursor.path = `${parentNode.path}-${nodeArrIndex}-${sameLevelConditionNodeList.length}`;
-        this.cursor.place = place;
-      }
+      this.cursor.parentNode = node.parentNode;
     },
     moveCursor(node) {
       // console.log('moveCursor :>> ', node);
       // 点击node移动光标
-      this.prevCursor = this._initPrevCursor(node);
-      this.cursor.path = this._pathStepForward(node.path);
+      this.cursor.initPrev(node);
       this.cursor.place = node.place
+      this.cursor.index = node.nodeIndex + 1;
+      this.cursor.layerIndex = node.layerIndex;
+      this.cursor.verticalIndex = node.verticalIndex;
+      this.cursor.parentNode = node.parentNode;
+      // this.cursor.path = this._pathStepForward(node.path);
     },
     setSelectedNode({node, selected}) {
-      console.log('node, selected :>> ', node, selected);
       if (selected) {
-        this.selectedNode = JSON.parse(JSON.stringify(node));
-        // console.log('this.selectedNode :>> ', this.selectedNode);
+        this.selectedNode = node;
       } else {
         this.selectedNode = null;
       }
     },
     increaseCaseWhenThen({
-      node
+      node,
+      operateLayerIndex,
+      copy = false
     }) {
-      const children = node.children;
-      const lastWhenThenNodeList = children[children.length - 2];
-      const hasCaseCondition = lastWhenThenNodeList.filter(node => node.place  === 'caseCondition').length;
-      const hasCaseValue = lastWhenThenNodeList.filter(node => node.place  === 'caseValue').length;
-      if ( !hasCaseCondition || !hasCaseValue){
-        const noConditionMsg = !hasCaseCondition && '有条件未设置，不可新增！';
-        const noValueMsg = !hasCaseValue && '有值未设置，不可新增！';
-        this.$message({
-          message: noConditionMsg || noValueMsg,
-          type: 'info',
-        });
-      } else {
-        node.children.splice(node.children.length-1, 0, []);
-      
-        // 更新光标位置
-        this.prevCursor = this._initPrevCursor();
-        this.cursor.path = `${node.path}-${node.children.length - 2}-0`;
-        this.cursor.place = 'caseCondition';
-        // 更新defaultValueNodeList path
-        let defaultValueArr = node.children.slice(-1)[0];
-        defaultValueArr.forEach((defaultValueNode, index) => {
-          defaultValueNode.path = `${node.path}-${node.children.length - 1}-${index}`;
-        })
-      }
+      node.insertLayer({layerIndex: operateLayerIndex, copy});
+      this.cursor.updateAfterInsertCaseWhenThen(node, operateLayerIndex);
+      this.cursor.pushSnapShot(this.rootNode)
     },
-    deleteCase(node) {
-      // 点击【删除分支】按钮，光标可能在其他节点处，先移动光标到case节点后，在调用删除节点方法
-      this.moveCursor(node);
-      this.deleteNode()
-    }
-    
+    deleteCaseWhenThen({ caseNode, whenThenIndex }) {
+      caseNode.deleteLayer(whenThenIndex)
+      this.cursor.updateAfterDeleteCaseWhenThen(caseNode, whenThenIndex);
+      this.cursor.pushSnapShot();
+    },
   }
 }
 </script>
+<style lang="less">
+.editor-text-formula{
+  #sqlTextCE{
+    min-height: 80px;
+  }
+}
+.popover-sql-text-content{
+  position: relative;
+}
+.popover-sql-text.el-popper{
+  right: 6%;
+  left: 35% !important;
+  box-shadow: 0 -2px 4px 0 rgba(0,0,0,10%), 0 2px 6px 6px rgba(0,0,0,10%), 0 2px 6px 0 rgba(0,0,0,20%);
+}
+.popover-sql-text-desc{
+  position: absolute;
+  font-size: 12px;
+  color: #666;
+}
+</style>
 <style lang="less" scoped>
+.editor-text-formula{
+  padding: 5px;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 4px;
+  height: 100px;
+  overflow-x: auto;
+  white-space: nowrap;
+  // position: relative;
+}
 .editor-btn-group{
-  .el-button{
+  .el-btn{
     margin-right: 5px;
     margin-bottom: 5px;
-    &+ .el-button{
-      margin-left: 0;
-    }
   }
 }
 .row-category {
@@ -957,4 +725,10 @@ export default {
   min-height: 100px;
   overflow-x: auto;
 }
-</style>>
+.switch-enterable-edit{
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: flex;
+}
+</style>

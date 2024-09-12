@@ -3,7 +3,7 @@
   <span @click="clickNodeName(node)" class="start-char" >{{ node.name === 'if' ? node.exportChar : node.name }}(</span>
 
   <ul class="inline-block" v-for="(paramsArr, arrIndex) in node.children" :key='arrIndex'>
-    <span class="cursor-placeholder " 
+    <!-- <span class="cursor-placeholder " 
           v-if="paramsArr.length === 0 && 
                 `${node.path}-${arrIndex}-0` === cursor.path && 
                 cursor.place === node.renderType"></span>
@@ -14,14 +14,29 @@
                         node,
                         paramsArrIndex: arrIndex,
                         place: node.renderType
-                      })" />
+                      })" /> -->
+                      <!-- {{cursor.parentNode === node}} -->
+    <span class="cursor-placeholder " 
+      v-if="
+      paramsArr.length === 0 
+      && `${node.path}-${arrIndex}-0` === cursor.path
+      && cursor.place === node.renderType"
+    ></span>
+  <el-button icon="el-icon-edit" circle size="mini"
+    v-else-if="
+      editable 
+      && paramsArr.length === 0" 
+      @click="$emit('editParams',{ node, paramsArrIndex: arrIndex, place: node.renderType })" 
+    />
+    <!-- {{arrIndex}} -->
+    <!-- {{node.verticalIndex}} -{{cursor.verticalIndex}} -->
     <FormulaNode
       v-for="(item, index) in paramsArr"
       :key="index"
       :node="item"
       :nodeIndex="index"
       :editable="editable"
-      :prevCursor="prevCursor"
+      
       :cursor="cursor"
       :selectedNode="selectedNode"
       :hoverNode="hoverNode"
@@ -44,10 +59,6 @@ export default {
       required: true
     },
     cursor: {
-      type: Object,
-      required: true
-    },
-    prevCursor: {
       type: Object,
       required: true
     },

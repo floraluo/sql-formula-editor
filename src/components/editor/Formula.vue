@@ -5,13 +5,14 @@
       :key="index"
       :node="node"
       :nodeIndex="index"
-      :prevCursor="prevCursor"
       :cursor="cursor"
       :selectedNode="selectedNode"
       :hoverNode="hoverNode"
       :editable="editable"
       v-on="$listeners"
     ></FormulaNode>
+    <span class="cursor-placeholder" v-show="nodes.length === 0"></span>
+
   </ul>
 </template>
 <script>
@@ -36,14 +37,6 @@ export default {
         }
       }
     },
-    prevCursor: { 
-      type: Object, 
-      default: () => {
-        return { 
-          path: null
-        }
-      }
-    },
     selectedNode: { type: Object, default: () => null },
     hoverNode: { type: Object, default: () => null },
     editable: {
@@ -51,35 +44,9 @@ export default {
       default: true
     }
   },
-  provide () {
-    return {
-      // prevCursor: this.prevCursor,
-      // cursor: this.cursor,
-      // selectedNode: this.selectedNode,
-      // hoverNode: this.hoverNode,
-      prevCursor: (() => this.prevCursorProp)(),
-      cursor: this.cursorProp,
-      selectedNode: this.selectedNodeProp,
-      hoverNode: this.hoverNodeProp,
-    }
-  },
-  watch: {
-    prevCursor: {
-      handler (val) {
-        // console.log('prevCursor val :>> ', val);
-        this.prevCursorProp = val;
-        // this.$emit('update:prevCursor', val)
-      },
-      immediate: true
-    },
-  },
 
   data() {
     return {
-      prevCursorProp: this.prevCursor,
-      cursorProp: this.cursor,
-      selectedNodeProp: this.selectedNode,
-      hoverNodeProp: this.hoverNode,
     }
   },
   created() {
@@ -91,5 +58,16 @@ export default {
 <style lang="less" scoped>
 .formula {
   white-space: nowrap;
+}
+.cursor-placeholder {
+  margin-right: 5px;
+  &::after{
+    content: '|';
+    color: #f00; 
+    opacity: 1;
+    font-weight: bold;
+    animation: cursorBlink 1s linear infinite;
+    -webkit-animation: cursorBlink 1s linear infinite;
+  }
 }
 </style>

@@ -2,7 +2,7 @@
   <span>
     <span @click="$parent.clickNodeName(node)" class="struct-name">{{ node.name }}(</span>
     <ul class="inline-block" v-for="(paramsArr, arrIndex) in node.children" :key='arrIndex'>
-      <el-tooltip :enterable="false"  placement="top" 
+      <el-tooltip placement="top" 
       v-show="!paramsArr[0].disabled" 
       content="常量不能为空" 
       trigger="focus" 
@@ -35,7 +35,6 @@ export default {
       required: true
     },
     cursor: { type: Object},
-    prevCursor: { type: Object},
   },
   data() {
     return {

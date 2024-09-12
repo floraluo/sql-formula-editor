@@ -1,15 +1,17 @@
 <template>
   <ul class="ul-struct" @mouseover.stop="$emit('setHoverNode', node)" @mouseleave="$emit('setHoverNode', null)">
     <li>
-      <el-tooltip :enterable="false"  content="点击【分支判断】可移动光标到末尾" placement="top">
+      <el-tooltip content="点击【分支判断】可移动光标到末尾" placement="top">
         <span class="inline-block default-symbol struct-name" @click="clickNodeName(node)">分支判断 </span>
       </el-tooltip>
+      <el-icon-button icon="mtdicon mtdicon-add operate-case-btn" size="small" v-if="editable"
+          @click="$emit('increaseCaseWhenThen', {node, operateLayerIndex: 0})"/>
       <ul v-for="(nodeList, nodeListIndex) in caseWhenThenList" :key="nodeListIndex"  >
         <FormulaCaseWhenThenNode
           :node="node"
           :whenThenNodelist="nodeList"
           :nodeListIndex="nodeListIndex"
-          :prevCursor="prevCursor"
+          
           :cursor="cursor"
           :selectedNode="selectedNode"
           :hoverNode="hoverNode"
@@ -17,18 +19,20 @@
           v-on="$listeners"
           />
         <li>
-        <button class="el-btn el-btn-text delete-when-then" type="button"
-        v-if="editable && node.children.length > 2" 
-        @click="$emit('deleteCaseWhenThen', {caseNode: node, whenThenIndex: nodeListIndex});"><span class="el-btn-before"><i class="mtdicon mtdicon-delete-o"></i></span></button>
+        <el-icon-button icon="mtdicon mtdicon-add operate-case-btn" size="small" v-if="editable"
+          @click="$emit('increaseCaseWhenThen', {node, operateLayerIndex: nodeListIndex + 1})"/>
+        <el-icon-button icon="mtdicon mtdicon-copy-o operate-case-btn" size="small" v-if="editable"
+          @click="$emit('increaseCaseWhenThen', {node, operateLayerIndex: nodeListIndex + 1, copy: true})"/>
+        <el-icon-button icon="mtdicon mtdicon-delete-o operate-case-btn" size="small"
+          v-if="editable && node.children.length > 2"  
+          @click="$emit('deleteCaseWhenThen', {caseNode: node, whenThenIndex: nodeListIndex});"  />
         </li>
       </ul>
-      <div class="case-btn-group">
-        <el-button round size="small" v-if="editable " @click="$emit('increaseCaseWhenThen', {node});">增加条件</el-button>
-        <el-button  round size="small" v-if="editable " @click="$emit('deleteCase', node);">删除分支</el-button>
-      </div>
       <ul >
         <span class='inline-block default-symbol'>默认值</span>
-        <el-button icon="el-icon-edit" circle size="mini"
+        <span class="cursor-placeholder " 
+        v-if="cursor.place === 'caseDefaultValue' && cursor.layerIndex === node.children.length - 1 && cursor.index == 0 && cursor.parentNode.path === node.path"></span>
+        <el-icon-button class="demo-icon-btn" type="secondary" icon="mtdicon mtdicon-edit-o" size="small"
                           v-if="editable && caseDefaultValueNodeList.length === 0 && 
                                 cursor.place !== 'caseDefaultValue'" 
                           @click="$emit('editCaseStructExp',{
@@ -42,7 +46,7 @@
           :node="item"
           :nodeIndex="index"
           :editable="editable"
-          :prevCursor="prevCursor"
+          
           :cursor="cursor"
           :selectedNode="selectedNode"
           :hoverNode="hoverNode"
@@ -67,10 +71,6 @@ export default {
       required: true
     },
     cursor: {
-      type: Object,
-      required: true
-    },
-    prevCursor: {
       type: Object,
       required: true
     },
@@ -100,3 +100,11 @@ export default {
   },
 }
 </script>
+<style lang="less" scoped>
+.operate-case-btn{
+  font-size: 12px;
+  height: 20px;
+  width: 20px;
+  padding: 4px;
+}
+</style>
