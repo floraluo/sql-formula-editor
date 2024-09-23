@@ -110,20 +110,17 @@
             <el-popover 
               v-if="visible"
               popper-class="popover-sql-text" 
-              :show-arrow="false" 
-              :visible="previewSqlTextVisible" 
               trigger="click" 
               placement="bottom" 
             >
               <el-button 
+                slot="reference"
                 size="small" 
-                type="primary" 
-                v-show="editable" 
                 @click="handlePreviewSqlText"
               >
                 编辑模式
               </el-button>
-              <div slot="content" class="popover-sql-text-content" >
+              <div  class="popover-sql-text-content" >
                 <div class="editor-text-formula" id="sqlTextContainer" >
                   <FormulaTextEditor
                     ref="enterableEditBox"
@@ -141,7 +138,7 @@
                 <div class="form-btn-group mt10 mb20 tr gutter">
                   <p class="popover-sql-text-desc">编辑模式模式下可用函数范围和配置模式相同，字段通过输入 # 检索，暂不支持的函数如有需要需，请联系管理员</p>
                   <el-button size="small" @click="handleClosePopoverSqlText" >取消</el-button>
-                  <!-- <el-button size="small" type="primary" @click="handleText2Node">解析</el-button> -->
+                  <el-button size="small" type="primary" @click="handleText2Node">解析</el-button>
                 </div>
               </div>
             </el-popover>
@@ -204,8 +201,8 @@ export default {
     // },
     fieldType: { type: String }, //quota, attribute, field
     editable: { type: Boolean, default: true },
-    visible: { type: Boolean },
-    fieldListAvailable: { type: Array}
+    // visible: { type: Boolean, default: true },
+    // fieldListAvailable: { type: Array}
 
   },
   computed: {
@@ -253,6 +250,8 @@ export default {
   },
   data() {
     return {
+      visible: true,
+      fieldListAvailable: [],
       cursor: new Cursor(this.rootNode),
       hoverNode: null,
 
@@ -303,21 +302,22 @@ export default {
       return result;
     },
     async node2Text() {
-      const result = await this.$API.manage.node2text({
-        fieldConfig: {
-          type: 'nodeList',
-          nodes: formatFormula(this.rootNode.children)
-        }
-      })
-      if (result.code === SUCCESS_CODE) {
-        const sqlText = result.data.fieldText;
-        const fieldStore = useFieldStore();
-        const { fieldList } = fieldStore;
-        const autoReplace = true;
-        this.sqlHtml = parseFormulaText(sqlText, this.fieldListAvailable, autoReplace);
+      console.log('note 2 text :>> ');
+      // const result = await this.$API.manage.node2text({
+      //   fieldConfig: {
+      //     type: 'nodeList',
+      //     nodes: formatFormula(this.rootNode.children)
+      //   }
+      // })
+      // if (result.code === SUCCESS_CODE) {
+      //   const sqlText = result.data.fieldText;
+      //   const fieldStore = useFieldStore();
+      //   const { fieldList } = fieldStore;
+      //   const autoReplace = true;
+      //   this.sqlHtml = parseFormulaText(sqlText, this.fieldListAvailable, autoReplace);
         
-      }
-      return result;
+      // }
+      // return result;
     },
     handlePreviewSqlText() {
       if (!this.previewSqlTextVisible) {
@@ -462,7 +462,7 @@ export default {
         if (this._validClipboardNode(clipboardText)) { //验证剪贴板文字是否合法的节点对象json字符串
           this.copiedNode = JSON.parse(clipboardText);
           const copiedNodeJson = JSON.parse(clipboardText);
-          console.log('this.fieldListAvailable :>> ', this.fieldListAvailable);
+          console.log('this.fieldListAvailable :>> ', JSON.stringify(this.fieldListAvailable));
           if (this.copiedNode.name === 'root') {
             this.cursor.patchInsertNodeOfPaste(copiedNodeJson.children, this.fieldListAvailable)
           } else {
@@ -691,6 +691,34 @@ export default {
   position: absolute;
   font-size: 12px;
   color: #666;
+}
+.form-btn-group{
+  &.mt20{
+    margin-top: 20px;
+  }
+  &.mt10{
+    margin-top: 10px;
+  }
+  &.mb20{
+    margin-bottom: 20px;
+  }
+  &.pr10{
+    padding-right: 10px;
+  }
+  &.center, &.tc{
+    text-align: center;
+  }
+  &.tr{
+    text-align: right;
+  }
+  &.pl100{
+    padding-left: 100px;
+  }
+  &.gutter{
+    >.mtd-btn + .mtd-btn{
+      margin-left: 15px;
+    }
+  }
 }
 </style>
 <style lang="less" scoped>

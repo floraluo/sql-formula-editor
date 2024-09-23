@@ -2,10 +2,10 @@
   <div class="home">
     <!-- <img alt="Vue logo" src="../assets/logo.png"> -->
     <el-row :gutter="10">
-      <el-col :span="12">
-        <Editor ref="editor"/>
+      <el-col :span="24">
+        <Editor ref="editor" :editable="true"  />
       </el-col>
-      <el-col :span="6"></el-col>
+      <!-- <el-col :span="6"></el-col> -->
     </el-row>
     <el-row :gutter="10">
       <el-col :span="6"><el-button type="primary" @click="save">保存</el-button></el-col>

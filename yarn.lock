@@ -3395,6 +3395,15 @@ cli-spinners@^2.0.0, cli-spinners@^2.5.0:
   resolved "http://r.npm.sankuai.com/cli-spinners/download/cli-spinners-2.9.2.tgz#1773a8f4b9c4d6ac31563df53b3fc1d79462fe41"
   integrity sha1-F3Oo9LnE1qwxVj31Oz/B15Ri/kE=
 
+clipboard@^2.0.0:
+  version "2.0.11"
+  resolved "http://r.npm.sankuai.com/clipboard/download/clipboard-2.0.11.tgz#62180360b97dd668b6b3a84ec226975762a70be5"
+  integrity sha1-YhgDYLl91mi2s6hOwiaXV2KnC+U=
+  dependencies:
+    good-listener "^1.2.2"
+    select "^1.1.2"
+    tiny-emitter "^2.0.0"
+
 clipboardy@^2.0.0:
   version "2.3.0"
   resolved "http://r.npm.sankuai.com/clipboardy/download/clipboardy-2.3.0.tgz#3c2903650c68e46a91b388985bc2774287dba290"
@@ -4131,6 +4140,11 @@ delayed-stream@~1.0.0:
   version "1.0.0"
   resolved "http://r.npm.sankuai.com/delayed-stream/download/delayed-stream-1.0.0.tgz#df3ae199acadfb7d440aaae0b29e2272b24ec619"
   integrity sha1-3zrhmayt+31ECqrgsp4icrJOxhk=
+
+delegate@^3.1.2:
+  version "3.2.0"
+  resolved "http://r.npm.sankuai.com/delegate/download/delegate-3.2.0.tgz#b66b71c3158522e8ab5744f720d8ca0c2af59166"
+  integrity sha1-tmtxwxWFIuirV0T3INjKDCr1kWY=
 
 depd@2.0.0:
   version "2.0.0"
@@ -5674,6 +5688,13 @@ globby@^9.2.0:
     ignore "^4.0.3"
     pify "^4.0.1"
     slash "^2.0.0"
+
+good-listener@^1.2.2:
+  version "1.2.2"
+  resolved "http://r.npm.sankuai.com/good-listener/download/good-listener-1.2.2.tgz#d53b30cdf9313dffb7dc9a0d477096aa6d145c50"
+  integrity sha1-1TswzfkxPf+33JoNR3CWqm0UXFA=
+  dependencies:
+    delegate "^3.1.2"
 
 gopd@^1.0.1:
   version "1.0.1"
@@ -9168,6 +9189,11 @@ select-hose@^2.0.0:
   resolved "http://r.npm.sankuai.com/select-hose/download/select-hose-2.0.0.tgz#625d8658f865af43ec962bfc376a37359a4994ca"
   integrity sha1-Yl2GWPhlr0Psliv8N2o3NZpJlMo=
 
+select@^1.1.2:
+  version "1.1.2"
+  resolved "http://r.npm.sankuai.com/select/download/select-1.1.2.tgz#0e7350acdec80b1108528786ec1d4418d11b396d"
+  integrity sha1-DnNQrN7ICxEIUoeG7B1EGNEbOW0=
+
 selfsigned@^1.10.8:
   version "1.10.14"
   resolved "http://r.npm.sankuai.com/selfsigned/download/selfsigned-1.10.14.tgz#ee51d84d9dcecc61e07e4aba34f229ab525c1574"
@@ -10009,6 +10035,11 @@ timsort@^0.3.0:
   resolved "http://r.npm.sankuai.com/timsort/download/timsort-0.3.0.tgz#405411a8e7e6339fe64db9a234de11dc31e02bd4"
   integrity sha1-QFQRqOfmM5/mTbmiNN4R3DHgK9Q=
 
+tiny-emitter@^2.0.0:
+  version "2.1.0"
+  resolved "http://r.npm.sankuai.com/tiny-emitter/download/tiny-emitter-2.1.0.tgz#1d1a56edfc51c43e863cbb5382a72330e3555423"
+  integrity sha1-HRpW7fxRxD6GPLtTgqcjMONVVCM=
+
 to-arraybuffer@^1.0.0:
   version "1.0.1"
   resolved "http://r.npm.sankuai.com/to-arraybuffer/download/to-arraybuffer-1.0.1.tgz#7d229b1fcc637e466ca081180836a7aabff83f43"
@@ -10500,6 +10531,13 @@ vm-browserify@^1.0.1:
   version "1.1.2"
   resolved "http://r.npm.sankuai.com/vm-browserify/download/vm-browserify-1.1.2.tgz#78641c488b8e6ca91a75f511e7a3b32a86e5dda0"
   integrity sha1-eGQcSIuObKkadfUR56OzKobl3aA=
+
+vue-clipboard2@^0.3.3:
+  version "0.3.3"
+  resolved "http://r.npm.sankuai.com/vue-clipboard2/download/vue-clipboard2-0.3.3.tgz#331fec85f9d4f175eb0d4feaef4d77338562af36"
+  integrity sha1-Mx/shfnU8XXrDU/q7013M4VirzY=
+  dependencies:
+    clipboard "^2.0.0"
 
 vue-demi@^0.14.10:
   version "0.14.10"
